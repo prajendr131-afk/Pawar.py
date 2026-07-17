@@ -1,0 +1,46 @@
+import streamlit as st
+import yfinance as yf
+import plotly.graph_objects as go
+import pandas as pd
+
+st.title("Demand & Supply Zone Indicator")
+
+# User Inputs
+ticker = st.text_input("Stock Symbol (e.g., AAPL, RELIANCE.NS)", "AAPL")
+period = st.selectbox("Period", ["1mo", "3mo", "6mo", "1y"])
+interval = st.selectbox("Interval", ["1d", "1wk"])
+
+if st.button("Analyze"):
+    # Fetch Data
+    data = yf.download(ticker, period=period, interval=interval)
+    
+    if not data.empty:
+        # Calculate Demand and Supply Zones (Simple High/Low of the period)
+        supply_zone = data['High'].max()
+        demand_zone = data['Low'].min()
+        
+        # Plotting
+        fig = go.Figure(data=[go.Candlestick(
+            x=data.index,
+            open=data['Open'],
+            high=data['High'],
+            low=data['Low'],
+            close=data['Close'],
+            name="Market Data"
+        )])
+        
+        # Add Supply Zone Line
+        fig.add_hline(y=float(supply_zone), line_dash="dash", line_color="red", 
+                      annotation_text="Supply Zone (Resistance)", annotation_position="top left")
+        
+        # Add Demand Zone Line
+        fig.add_hline(y=float(demand_zone), line_dash="dash", line_color="green", 
+                      annotation_text="Demand Zone (Support)", annotation_position="bottom left")
+        
+        fig.update_layout(title=f"{ticker} Charts with Zones", xaxis_rangeslider_visible=False)
+        st.plotly_chart(fig)
+        
+        st.success(f"Current Supply Zone: {supply_zone:.2f}")
+        st.success(f"Current Demand Zone: {demand_zone:.2f}")
+    else:
+        st.error("Data nahi mila. Kripya sahi ticker symbol dalein.")
